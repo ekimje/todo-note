@@ -19,7 +19,49 @@ PC와 휴대폰에서 같이 쓰는 할 일 노트. Docker Compose 하나로 세
 - **db**: PostgreSQL 16. 데이터는 `db-data` 볼륨에 저장되어 컨테이너를 지워도 남음
 - web은 db에 직접 접근할 수 없고(네트워크 분리), db 포트는 호스트에 열리지 않음
 
-## 실행
+## PC 설치판 (Docker 없이)
+
+`desktop/` — API·웹 화면·위젯을 exe 하나로 묶은 Windows 설치 파일. DB는 PostgreSQL 대신 **SQLite 파일 하나**.
+
+```
+TodoNote.exe (트레이 상주)
+ ├─ API + 웹 화면  http://127.0.0.1:8080   ← 위젯 기본 주소와 같아 위젯 설정 변경 불필요
+ ├─ 데이터         %APPDATA%\TodoNote\todos.db   (백업 = 이 파일 복사, 프로그램을 지워도 남음)
+ └─ 달력 위젯      실행 시 자동으로 띄움
+```
+
+**빌드** (Python 3.13, 설치 파일까지 만들려면 Inno Setup 6: `winget install JRSoftware.InnoSetup`)
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File desktop\build.ps1
+```
+
+- `desktop\dist\TodoNote-Setup-<버전>.exe` — 설치 파일 (관리자 권한 불필요, 바탕화면 바로가기·로그인 시 자동 실행 선택)
+- `desktop\dist\TodoNote\TodoNote.exe` — 설치 없이 바로 실행
+
+**사용**
+
+- 바탕화면 아이콘 → 주소창 없는 앱 창(Edge/Chrome `--app`)으로 열림. 이미 실행 중이면 창만 새로 열림
+- 트레이 아이콘 우클릭: 열기 / 달력 위젯 켜기 / **휴대폰 접속 허용** / 데이터 폴더 열기 / 종료
+- 휴대폰 접속 허용을 켜면 같은 와이파이에서 메뉴에 표시된 `http://<PC IP>:8080` 으로 접속 (PC가 켜져 있어야 함, 처음 켤 때 Windows 방화벽 허용 필요).
+  ⚠ 로그인 기능이 없어 같은 네트워크의 누구나 접근 가능 — 집 와이파이에서만 켜기
+- 설정: `%APPDATA%\TodoNote\desktop.json` (`port`, `lan`, `widget`), 로그: 같은 폴더 `desktop.log`
+- Docker 판과 둘 다 8080 을 쓰므로 동시에 켜지 않기 (설치판이 알려 주고 종료함)
+
+**Docker 판 데이터 옮기기** — Docker 스택이 켜진 상태에서 한 번 실행 (id 그대로 복사, 여러 번 해도 중복 없음):
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\TodoNote\TodoNote.exe" --import-from http://localhost:8080/api
+```
+
+개발 중 실행·테스트 (패키지: `pip install -r desktop/requirements.txt`):
+
+```bash
+python desktop/todo_desktop.py --no-tray --port 8090          # 서버만
+TODO_API_URL=http://127.0.0.1:8090/api python -m pytest api/tests
+```
+
+## 실행 (Docker 판)
 
 ```bash
 cp .env.example .env          # POSTGRES_PASSWORD 를 긴 임의 문자열로 변경

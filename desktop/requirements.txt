@@ -1,0 +1,6 @@
+# PC 설치판 (api/ 의 코드를 SQLite 로 실행). PostgreSQL 드라이버는 필요 없음
+fastapi==0.115.6
+uvicorn==0.34.0
+pystray==0.19.5
+pillow==11.1.0
+pyinstaller==6.11.1
