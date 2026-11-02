@@ -1,6 +1,6 @@
-# web/public 을 GitHub Pages 에 올린다 → https://ekimje.github.io/todo-note/
+# web/public 을 gh-pages 브랜치로 올린다 → https://ekimje.github.io/todo-note/
 # 서버가 없으므로 그 주소에서는 할 일을 각자 브라우저(localStorage)에 저장한다 (app.js 의 LOCAL 모드).
-# 처음 한 번: 저장소 Settings → Pages → Source 를 "GitHub Actions" 로 설정
+# gh-pages 는 web/public 에서 자동으로 만드는 브랜치 — 직접 고치지 말 것
 name: Pages
 
 on:
@@ -10,25 +10,20 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
         with:
-          path: web/public
-      - id: deploy
-        uses: actions/deploy-pages@v4
+          fetch-depth: 0
+      - name: web/public → gh-pages
+        run: |
+          git subtree split --prefix web/public -b pages-build
+          git push --force origin pages-build:gh-pages

@@ -6,8 +6,8 @@
 
 - 서버 없이 GitHub Pages 에 올린 페이지라 할 일은 **그 브라우저에만 저장**된다 (다른 기기·바탕화면 위젯과 동기화 안 됨, 브라우저 데이터를 지우면 사라짐)
 - 여러 기기·위젯과 같은 데이터를 쓰려면 아래 **PC 설치판** 또는 **Docker 판**을 사용
-- 배포: `web/public` 이 바뀌어 `main` 에 푸시되면 `.github/workflows/pages.yml` 이 자동으로 다시 올림
-  (처음 한 번: 저장소 **Settings → Pages → Source = GitHub Actions**)
+- 배포: `web/public` 이 바뀌어 `main` 에 푸시되면 `.github/workflows/pages.yml` 이 그 내용을 `gh-pages` 브랜치로 올리고,
+  GitHub Pages 가 그 브랜치를 서비스함 (`gh-pages` 는 자동 생성 브랜치라 직접 고치지 않음)
 - 다른 주소에서도 주소 끝에 `?local` 을 붙이면 같은 브라우저 저장 모드로 열림
 
 PC와 휴대폰에서 같이 쓰는 할 일 노트. Docker Compose 하나로 세 티어를 띄우고,
