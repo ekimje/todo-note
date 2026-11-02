@@ -1,7 +1,10 @@
 // 할 일 노트 — 프레젠테이션 티어. 데이터는 /api (FastAPI → PostgreSQL / PC 설치판은 SQLite) 에 저장한다.
+// 서버 없이 올린 곳(GitHub Pages, 또는 주소 끝에 ?local)에서는 이 브라우저(localStorage)에만 저장한다.
 (function () {
   "use strict";
   const API = "/api";
+  const LOCAL = location.hostname.endsWith("github.io") || new URLSearchParams(location.search).has("local");
+  const SAVED = LOCAL ? "이 브라우저에 저장됨" : "서버에 저장됨";
   const PRI_LABEL = { high: "높음", mid: "보통", low: "낮음" };
   const PRI_RANK = { high: 0, mid: 1, low: 2 };
   const POLL_MS = 15000;
@@ -31,6 +34,7 @@
 
   // ---------- API ----------
   async function api(method, path, body) {
+    if (LOCAL) return localApi(method, path, body);
     const res = await fetch(API + path, {
       method,
       headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -46,9 +50,63 @@
     return res.status === 204 ? null : res.json();
   }
 
+  // 서버 API 와 같은 규칙으로 동작하는 브라우저 저장소
+  const LOCAL_KEY = "todo-items";
+  function localLoad() {
+    try { const a = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function localSave(items) {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(items)); }
+    catch (e) { throw new Error("브라우저 저장소를 쓸 수 없어요 (사생활 보호 모드인지 확인)"); }
+  }
+  function localFail(status, msg) { const e = new Error(msg); e.status = status; throw e; }
+  function localCheck(t) {
+    if (!t.text || !String(t.text).trim()) localFail(422, "할 일 내용이 비어 있어요");
+    if (t.start && (!t.due || t.start > t.due)) localFail(422, "시작일은 마감일보다 늦을 수 없고, 시작일을 쓰려면 마감일이 필요해요");
+  }
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+  async function localApi(method, path, body) {
+    const items = localLoad();
+    const stamp = new Date().toISOString();
+    const id = path.startsWith("/todos/") ? decodeURIComponent(path.slice(7)) : null;
+    if (method === "GET" && path === "/todos") return items;
+    if (method === "POST" && path === "/todos") {
+      const due = body.due || body.start || null;
+      const start = body.start && body.start !== due ? body.start : null;
+      const t = { id: newId(), text: String(body.text).trim(), done: false, priority: body.priority || "mid",
+                  start, due, color: body.color ?? null, created_at: stamp, updated_at: stamp };
+      localCheck(t);
+      items.push(t); localSave(items);
+      return t;
+    }
+    if (method === "PATCH" && id) {
+      const i = items.findIndex((x) => x.id === id);
+      if (i < 0) localFail(404, "할 일을 찾을 수 없어요");
+      const t = Object.assign({}, items[i], body, { updated_at: stamp });
+      if (typeof t.text === "string") t.text = t.text.trim();
+      localCheck(t);
+      items[i] = t; localSave(items);
+      return t;
+    }
+    if (method === "DELETE" && id) {
+      const rest = items.filter((x) => x.id !== id);
+      if (rest.length === items.length) localFail(404, "할 일을 찾을 수 없어요");
+      localSave(rest);
+      return null;
+    }
+    if (method === "DELETE" && path === "/todos") {
+      const rest = items.filter((x) => !x.done);
+      localSave(rest);
+      return { deleted: items.length - rest.length };
+    }
+    localFail(404, "지원하지 않는 요청");
+  }
+
   async function write(fn, what) {
     pending++;
-    try { await fn(); showNotice(""); setSync("ok", "서버에 저장됨"); }
+    try { await fn(); showNotice(""); setSync("ok", SAVED); }
     catch (e) {
       showNotice(what + " 저장하지 못했어요. (" + e.message + ")");
       setSync("err", "저장 실패");
@@ -63,7 +121,7 @@
       if (pending) return;
       todos = data;
       loaded = true;
-      setSync("ok", "서버에 저장됨");
+      setSync("ok", SAVED);
       if (!editingId) render();
     } catch (e) {
       setSync("err", "서버 연결 안 됨");
@@ -363,6 +421,11 @@
   setInterval(() => { if (!document.hidden) refresh(); }, POLL_MS);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
   window.addEventListener("focus", refresh);
+
+  if (LOCAL) {
+    document.querySelector(".hint").textContent =
+      "할 일 글자를 누르면 수정할 수 있어요. 이 페이지는 이 브라우저에만 저장돼요 (다른 기기·위젯과 동기화 안 됨).";
+  }
 
   render();
   refresh();
