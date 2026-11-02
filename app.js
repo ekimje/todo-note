@@ -1,4 +1,4 @@
-// 할 일 노트 — 프레젠테이션 티어. 데이터는 /api (FastAPI → PostgreSQL) 에 저장한다.
+// 할 일 노트 — 프레젠테이션 티어. 데이터는 /api (FastAPI → PostgreSQL / PC 설치판은 SQLite) 에 저장한다.
 (function () {
   "use strict";
   const API = "/api";
@@ -6,12 +6,15 @@
   const PRI_RANK = { high: 0, mid: 1, low: 2 };
   const POLL_MS = 15000;
   const COLORS = ["#E0B800", "#3FA34D", "#E0508E", "#3D8BE0", "#E07B1F"]; // 바탕화면 달력 위젯과 같은 색
+  const PRI_COLOR = { high: 2, mid: 3, low: 1 }; // 색을 고르지 않은 일정: 위젯과 같은 규칙
+  const MAX_LANES = 3;                           // 달력 한 주에 쌓는 일정 줄 수 (넘치면 +n)
 
   let todos = [];
   let filter = "all";
   let loaded = false;
   let editingId = null;
   let pending = 0; // 진행 중인 쓰기 요청 수 — 이 동안은 서버 목록으로 덮어쓰지 않음
+  let view = "list"; // list | cal
 
   const $ = (id) => document.getElementById(id);
   const pad = (n) => String(n).padStart(2, "0");
@@ -20,7 +23,11 @@
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   $("today").textContent = todayStr.replace(/-/g, ".") + " (" + days[now.getDay()] + ")";
 
+  let sel = todayStr;                                   // 달력에서 고른 날짜
+  let calY = now.getFullYear(), calM = now.getMonth(); // 달력에 보이는 달 (월은 0부터)
+
   try { const f = localStorage.getItem("todo-filter"); if (f) filter = f; } catch (e) {}
+  try { const v = localStorage.getItem("todo-view"); if (v === "list" || v === "cal") view = v; } catch (e) {}
 
   // ---------- API ----------
   async function api(method, path, body) {
@@ -86,14 +93,22 @@
     });
   }
 
+  const passes = (t) => filter === "all" || (filter === "done" ? t.done : !t.done);
+
   function render() {
     document.querySelectorAll(".filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
+    document.querySelectorAll(".views button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === view)));
+    const isCal = view === "cal";
+    $("cal").hidden = !isCal;
+    $("dayHead").hidden = !isCal;
+    if (isCal) renderCal();
     const left = todos.filter((t) => !t.done).length;
     const doneCount = todos.length - left;
     $("summary").innerHTML = todos.length ? "남은 일 <b>" + left + "</b> / 전체 " + todos.length : "";
     $("clearDone").hidden = doneCount === 0;
 
-    const shown = sorted(todos.filter((t) => filter === "all" || (filter === "done" ? t.done : !t.done)));
+    const base = todos.filter(passes);
+    const shown = sorted(isCal ? base.filter((t) => onDay(t, sel)) : base);
     const list = $("list");
     list.replaceChildren(...shown.map(row));
     list.hidden = shown.length === 0;
@@ -101,9 +116,112 @@
     const empty = $("empty");
     empty.hidden = shown.length > 0;
     if (!loaded) empty.innerHTML = "<strong>불러오는 중…</strong>저장된 할 일을 가져오고 있어요.";
+    else if (isCal) empty.innerHTML = "<strong>이 날은 할 일이 없어요</strong>‘이 날짜로 추가’를 누르면 바로 적을 수 있어요.";
     else if (!todos.length) empty.innerHTML = "<strong>아직 할 일이 없어요</strong>위 입력란에 첫 할 일을 적고 Enter를 누르세요.";
     else if (filter === "done") empty.innerHTML = "<strong>완료한 일이 없어요</strong>체크한 항목이 여기에 모입니다.";
     else empty.innerHTML = "<strong>모두 끝냈어요</strong>진행 중인 할 일이 없습니다.";
+  }
+
+  // ---------- 달력 ----------
+  const parse = (ds) => { const [y, m, d] = ds.split("-").map(Number); return new Date(y, m - 1, d); };
+  const ymd = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const startOf = (t) => t.start || t.due;
+  const onDay = (t, ds) => !!t.due && startOf(t) <= ds && ds <= t.due;
+  const colorOf = (t) => (t.color != null && COLORS[t.color] ? t.color : PRI_COLOR[t.priority] ?? 3);
+  const dayLabel = (ds) => { const d = parse(ds); return (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + days[d.getDay()] + ")"; };
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function renderCal() {
+    const first = new Date(calY, calM, 1);
+    const gridStart = addDays(first, -first.getDay());
+    const weekCount = Math.ceil((first.getDay() + new Date(calY, calM + 1, 0).getDate()) / 7);
+    $("calTitle").textContent = calY + "년 " + (calM + 1) + "월";
+    const items = todos.filter((t) => t.due && passes(t));
+    const weeks = [];
+
+    for (let w = 0; w < weekCount; w++) {
+      const ws = addDays(gridStart, 7 * w);
+      const wsS = ymd(ws), weS = ymd(addDays(ws, 6));
+      const week = el("div", "cal-week");
+      const col = (ds) => Math.round((parse(ds) - ws) / 864e5);
+
+      for (let d = 0; d < 7; d++) {
+        const date = addDays(ws, d), ds = ymd(date);
+        const n = items.filter((t) => onDay(t, ds)).length;
+        const cell = el("button", "cal-day");
+        cell.type = "button";
+        if (date.getMonth() !== calM) cell.classList.add("out");
+        if (d === 0) cell.classList.add("sun");
+        if (d === 6) cell.classList.add("sat");
+        if (ds === todayStr) cell.classList.add("today");
+        cell.style.gridColumn = String(d + 1);
+        cell.setAttribute("aria-pressed", String(ds === sel));
+        cell.setAttribute("aria-label", dayLabel(ds) + (n ? ", 할 일 " + n + "개" : ""));
+        cell.appendChild(el("span", "num", String(date.getDate())));
+        cell.addEventListener("click", () => {
+          sel = ds;
+          if (date.getMonth() !== calM) { calY = date.getFullYear(); calM = date.getMonth(); }
+          render();
+        });
+        week.appendChild(cell);
+      }
+
+      // 이번 주에 걸친 일정: 먼저 시작하고 긴 것부터 빈 줄에 배치 (위젯과 같은 방식)
+      const evs = items.filter((t) => startOf(t) <= weS && t.due >= wsS).sort((a, b) =>
+        startOf(a) < startOf(b) ? -1 : startOf(a) > startOf(b) ? 1 :
+        (parse(b.due) - parse(startOf(b))) - (parse(a.due) - parse(startOf(a))));
+      const used = Array.from({ length: MAX_LANES }, () => new Array(7).fill(false));
+      const hidden = new Array(7).fill(0);
+
+      for (const t of evs) {
+        const c0 = Math.max(0, col(startOf(t))), c1 = Math.min(6, col(t.due));
+        let lane = -1;
+        for (let l = 0; l < MAX_LANES && lane < 0; l++) {
+          if (used[l].slice(c0, c1 + 1).every((x) => !x)) lane = l;
+        }
+        if (lane < 0) { for (let c = c0; c <= c1; c++) hidden[c]++; continue; }
+        for (let c = c0; c <= c1; c++) used[lane][c] = true;
+
+        const multi = t.due > startOf(t);
+        const bar = el("div", "cal-bar c" + colorOf(t) + (multi ? " multi" : " single") + (t.done ? " done" : ""), t.text);
+        if (multi && startOf(t) < wsS) bar.classList.add("cont-l");
+        if (multi && t.due > weS) bar.classList.add("cont-r");
+        bar.style.gridColumn = (c0 + 1) + " / " + (c1 + 2);
+        bar.style.gridRow = String(lane + 2);
+        bar.title = t.text + "\n" + (multi ? fmtDue(startOf(t)) + " ~ " + fmtDue(t.due) : fmtDue(t.due)) + (t.done ? " (완료)" : "");
+        week.appendChild(bar);
+      }
+      for (let c = 0; c < 7; c++) {
+        if (!hidden[c]) continue;
+        const more = el("div", "cal-more", "+" + hidden[c]);
+        more.style.gridColumn = String(c + 1);
+        more.style.gridRow = String(MAX_LANES + 2);
+        week.appendChild(more);
+      }
+      weeks.push(week);
+    }
+    $("calWeeks").replaceChildren(...weeks);
+
+    const undated = todos.filter((t) => !t.due && passes(t)).length;
+    $("calFoot").hidden = !undated;
+    $("calFoot").textContent = "마감일 없는 할 일 " + undated + "개는 달력에 없고 목록에서 볼 수 있어요.";
+
+    const n = todos.filter((t) => onDay(t, sel) && passes(t)).length;
+    $("dayLabel").replaceChildren(el("b", null, dayLabel(sel)), document.createTextNode(n ? " · " + n + "개" : ""));
+  }
+
+  function showMonth(y, m) {
+    calY = y + Math.floor(m / 12); calM = ((m % 12) + 12) % 12;
+    const today = parse(todayStr);
+    sel = today.getFullYear() === calY && today.getMonth() === calM ? todayStr : ymd(new Date(calY, calM, 1));
+    render();
   }
 
   function row(t) {
@@ -210,6 +328,20 @@
     try { localStorage.setItem("todo-filter", filter); } catch (e) {}
     render();
   }));
+
+  document.querySelectorAll(".views button").forEach((b) => b.addEventListener("click", () => {
+    view = b.dataset.v;
+    try { localStorage.setItem("todo-view", view); } catch (e) {}
+    render();
+  }));
+  $("calPrev").addEventListener("click", () => showMonth(calY, calM - 1));
+  $("calNext").addEventListener("click", () => showMonth(calY, calM + 1));
+  $("calToday").addEventListener("click", () => showMonth(now.getFullYear(), now.getMonth()));
+  $("dayAdd").addEventListener("click", () => {
+    $("newDue").value = sel; $("newStart").value = "";
+    $("newText").focus();
+    $("addForm").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  });
 
   let armTimer = null;
   $("clearDone").addEventListener("click", () => {
