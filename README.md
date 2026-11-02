@@ -1,5 +1,15 @@
 # 할 일 노트 (3티어)
 
+### 👉 [바로 써 보기 — ekimje.github.io/todo-note](https://ekimje.github.io/todo-note/)
+
+설치·다운로드 없이 브라우저에서 바로 열리는 버전(목록 / 달력 보기). 휴대폰에서는 홈 화면에 추가하면 앱처럼 쓸 수 있다.
+
+- 서버 없이 GitHub Pages 에 올린 페이지라 할 일은 **그 브라우저에만 저장**된다 (다른 기기·바탕화면 위젯과 동기화 안 됨, 브라우저 데이터를 지우면 사라짐)
+- 여러 기기·위젯과 같은 데이터를 쓰려면 아래 **PC 설치판** 또는 **Docker 판**을 사용
+- 배포: `web/public` 이 바뀌어 `main` 에 푸시되면 `.github/workflows/pages.yml` 이 자동으로 다시 올림
+  (처음 한 번: 저장소 **Settings → Pages → Source = GitHub Actions**)
+- 다른 주소에서도 주소 끝에 `?local` 을 붙이면 같은 브라우저 저장 모드로 열림
+
 PC와 휴대폰에서 같이 쓰는 할 일 노트. Docker Compose 하나로 세 티어를 띄우고,
 바탕화면 반투명 달력 위젯(`widget/`)도 같은 API를 써서 웹·휴대폰·바탕화면이 같은 데이터를 본다.
 
