@@ -1,0 +1,24 @@
+lab@s07:~/todo-note$ id todo-api
+uid=999(todo-api) gid=987(todo-api) groups=987(todo-api)
+lab@s07:~/todo-note$ ls -l /opt/todo-note /opt/todo-note/api /opt/todo-note/api/app
+/opt/todo-note:
+total 8
+drwxr-xr-x 3 root root 4096 Nov  2 10:19 api
+drwxr-xr-x 5 root root 4096 Nov  2 10:19 venv
+
+/opt/todo-note/api:
+total 8
+drwxr-xr-x 2 root root 4096 Nov  2 10:19 app
+-rw-r--r-- 1 root root   86 Nov  2 10:19 requirements.txt
+
+/opt/todo-note/api/app:
+total 12
+-rw-r--r-- 1 root root    0 Nov  2 10:19 __init__.py
+-rw-r--r-- 1 root root  391 Nov  2 10:19 config.py
+-rw-r--r-- 1 root root 6190 Nov  2 10:19 main.py
+lab@s07:~/todo-note$ /opt/todo-note/venv/bin/pip list 2>/dev/null | grep -iE 'fastapi|uvicorn|psycopg'
+fastapi           0.115.6
+psycopg           3.2.3
+psycopg-binary    3.2.3
+psycopg-pool      3.2.4
+uvicorn           0.34.0

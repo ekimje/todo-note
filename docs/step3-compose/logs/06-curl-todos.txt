@@ -1,0 +1,18 @@
+lab@s07:~/todo-note$ docker compose ps --format 'table {{.Service}}\t{{.Status}}'
+SERVICE   STATUS
+api       Up 24 seconds (healthy)
+db        Up 30 seconds (healthy)
+web       Up 18 seconds (healthy)
+lab@s07:~/todo-note$ curl -s localhost:8080/api/health; echo
+{"status":"ok","db":"ok"}
+lab@s07:~/todo-note$ curl -s localhost:8080/api/todos; echo
+[]
+lab@s07:~/todo-note$ curl -s -X POST localhost:8080/api/todos -H 'content-type: application/json' -d '{"text":"컨테이너로 배포 확인","priority":"high","due":"2026-11-05"}' | python3 -m json.tool --no-ensure-ascii | head -6
+{
+    "id": "aca6ffd0-8982-48f5-af82-c063c497b57b",
+    "text": "컨테이너로 배포 확인",
+    "done": false,
+    "priority": "high",
+    "start": null,
+lab@s07:~/todo-note$ curl -s localhost:8080/api/todos | python3 -m json.tool --no-ensure-ascii | grep '"text"'
+        "text": "컨테이너로 배포 확인",

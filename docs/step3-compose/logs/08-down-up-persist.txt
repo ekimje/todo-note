@@ -1,0 +1,29 @@
+lab@s07:~/todo-note$ docker compose down 2>&1 | awk '!seen[$0]++'
+ Container todo-note-web-1 Stopping 
+ Container todo-note-web-1 Stopped 
+ Container todo-note-web-1 Removing 
+ Container todo-note-web-1 Removed 
+ Container todo-note-api-1 Stopping 
+ Container todo-note-api-1 Stopped 
+ Container todo-note-api-1 Removing 
+ Container todo-note-api-1 Removed 
+ Container todo-note-db-1 Stopping 
+ Container todo-note-db-1 Stopped 
+ Container todo-note-db-1 Removing 
+ Container todo-note-db-1 Removed 
+ Network todo-note_backend Removing 
+ Network todo-note_frontend Removing 
+ Network todo-note_backend Removed 
+ Network todo-note_frontend Removed 
+lab@s07:~/todo-note$ docker compose ps -a; docker volume ls | grep -E 'DRIVER|todo-note'
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+DRIVER    VOLUME NAME
+local     todo-note_db-data
+lab@s07:~/todo-note$ docker compose up -d 2>&1 | grep -E 'Started|Healthy' | awk '!seen[$0]++'
+ Container todo-note-db-1 Started 
+ Container todo-note-db-1 Healthy 
+ Container todo-note-api-1 Started 
+ Container todo-note-api-1 Healthy 
+ Container todo-note-web-1 Started 
+lab@s07:~/todo-note$ sleep 3; curl -s localhost:8080/api/todos | python3 -m json.tool --no-ensure-ascii | grep '"text"'
+        "text": "컨테이너로 배포 확인",

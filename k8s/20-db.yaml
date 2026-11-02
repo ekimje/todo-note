@@ -1,0 +1,58 @@
+# 데이터 티어 — PostgreSQL 공식 이미지 + PVC(데이터 유지)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-data
+  namespace: todo-note
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  namespace: todo-note
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate         # 디스크(RWO)를 한 파드만 쓸 수 있어 옛 파드를 먼저 내린다
+  selector:
+    matchLabels: {app: db}
+  template:
+    metadata:
+      labels: {app: db}
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - configMapRef: {name: todo-config}
+        - secretRef: {name: todo-db}      # POSTGRES_PASSWORD
+        env:
+        - name: PGDATA                     # 볼륨 최상위가 아닌 하위 폴더에 데이터
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        readinessProbe:
+          exec:
+            command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+          periodSeconds: 5
+      volumes:
+      - name: data
+        persistentVolumeClaim: {claimName: db-data}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: todo-note
+spec:
+  selector: {app: db}
+  ports:
+  - port: 5432

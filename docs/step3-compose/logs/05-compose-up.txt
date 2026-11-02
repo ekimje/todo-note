@@ -1,0 +1,40 @@
+lab@s07:~/todo-note$ docker compose up -d
+ Image todo-note-web:1.0 Pulling 
+ Image postgres:16-alpine Pulling 
+ Image todo-note-api:1.0 Pulling 
+   … (이미지 레이어 다운로드 진행 줄 생략) …
+ Image postgres:16-alpine Pulled 
+ Image todo-note-api:1.0 Building 
+ Image todo-note-web:1.0 Building 
+ Image todo-note-api:1.0 Built 
+ Image todo-note-web:1.0 Built 
+ Network todo-note_backend Creating 
+ Volume todo-note_db-data Creating 
+ Network todo-note_frontend Creating 
+ Volume todo-note_db-data Created 
+ Network todo-note_frontend Created 
+ Network todo-note_backend Created 
+ Container todo-note-db-1 Creating 
+ Container todo-note-db-1 Created 
+ Container todo-note-api-1 Creating 
+ Container todo-note-api-1 Created 
+ Container todo-note-web-1 Creating 
+ Container todo-note-web-1 Created 
+ Container todo-note-db-1 Starting 
+ Container todo-note-db-1 Started 
+ Container todo-note-db-1 Waiting 
+ Container todo-note-db-1 Healthy 
+ Container todo-note-api-1 Starting 
+ Container todo-note-api-1 Started 
+ Container todo-note-api-1 Waiting 
+ Container todo-note-api-1 Healthy 
+ Container todo-note-web-1 Starting 
+ Container todo-note-web-1 Started 
+lab@s07:~/todo-note$ docker compose ps
+NAME              IMAGE                COMMAND                  SERVICE   CREATED          STATUS                                     PORTS
+todo-note-api-1   todo-note-api:1.0    "uvicorn app.main:ap…"   api       12 seconds ago   Up 5 seconds (healthy)                     8000/tcp
+todo-note-db-1    postgres:16-alpine   "docker-entrypoint.s…"   db        12 seconds ago   Up 11 seconds (healthy)                    5432/tcp
+todo-note-web-1   todo-note-web:1.0    "/docker-entrypoint.…"   web       12 seconds ago   Up Less than a second (health: starting)   0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+lab@s07:~/todo-note$ docker images | grep -E 'REPOSITORY|todo-note'
+todo-note-api:1.0                                                                                c880d0cf6663        250MB         60.3MB   U    
+todo-note-web:1.0                                                                                535b70607d4e       73.7MB           21MB   U    

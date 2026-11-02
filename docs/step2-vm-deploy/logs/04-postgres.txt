@@ -1,0 +1,27 @@
+lab@s07:~/todo-note$ sudo ls -l /etc/todo-note/api.env
+-rw------- 1 root root 146 Nov  2 10:19 /etc/todo-note/api.env
+lab@s07:~/todo-note$ sudo sed 's/PASSWORD=.*/PASSWORD=********/' /etc/todo-note/api.env
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+POSTGRES_USER=todo
+POSTGRES_DB=todo
+POSTGRES_PASSWORD=********
+lab@s07:~/todo-note$ sudo -u postgres psql -c '\du todo' -c '\l todo'
+     List of roles
+ Role name | Attributes 
+-----------+------------
+ todo      | 
+
+                                             List of databases
+ Name | Owner | Encoding | Locale Provider | Collate |  Ctype  | ICU Locale | ICU Rules | Access privileges 
+------+-------+----------+-----------------+---------+---------+------------+-----------+-------------------
+ todo | todo  | UTF8     | libc            | C.UTF-8 | C.UTF-8 |            |           | 
+(1 row)
+
+lab@s07:~/todo-note$ sudo ss -lntp | grep 5432
+LISTEN 0      200        127.0.0.1:5432       0.0.0.0:*    users:(("postgres",pid=329566,fd=7))                                                                                                     
+LISTEN 0      200            [::1]:5432          [::]:*    users:(("postgres",pid=329566,fd=6))                                                                                                     
+lab@s07:~/todo-note$ set -a; . <(sudo cat /etc/todo-note/api.env); PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -U todo -d todo -c 'select current_user, version();' | head -3
+ current_user |                                                                 version                                                                  
+--------------+------------------------------------------------------------------------------------------------------------------------------------------
+ todo         | PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit

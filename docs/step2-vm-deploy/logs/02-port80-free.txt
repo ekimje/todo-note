@@ -1,0 +1,8 @@
+lab@s07:~/todo-note$ docker ps -a --filter name=lab- --format 'table {{.Names}}\t{{.Status}}'
+NAMES               STATUS
+lab-worker2         Exited (137) About a minute ago
+lab-control-plane   Exited (137) About a minute ago
+lab-worker          Exited (137) About a minute ago
+lab@s07:~/todo-note$ sudo ss -lntp | grep -E ':(80|8080) ' || echo '80/8080 비어 있음'
+LISTEN 0      511          0.0.0.0:80         0.0.0.0:*    users:(("nginx",pid=327662,fd=5),("nginx",pid=327661,fd=5),("nginx",pid=327660,fd=5),("nginx",pid=327659,fd=5),("nginx",pid=327657,fd=5))
+LISTEN 0      511             [::]:80            [::]:*    users:(("nginx",pid=327662,fd=6),("nginx",pid=327661,fd=6),("nginx",pid=327660,fd=6),("nginx",pid=327659,fd=6),("nginx",pid=327657,fd=6))

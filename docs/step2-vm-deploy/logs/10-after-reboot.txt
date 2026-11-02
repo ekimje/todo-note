@@ -1,0 +1,17 @@
+lab@s07:~/todo-note$ uptime -s; cat /proc/sys/kernel/random/boot_id
+2026-11-02 10:24:02
+c69a8886-fee3-44c2-8a24-ab8b9d1762f0
+lab@s07:~/todo-note$ systemctl is-active postgresql todo-api nginx
+active
+active
+active
+lab@s07:~/todo-note$ systemctl status todo-api --no-pager | sed -n '1,4p'
+● todo-api.service - Todo Note API (FastAPI)
+     Loaded: loaded (/etc/systemd/system/todo-api.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-11-02 10:24:13 KST; 1min 39s ago
+   Main PID: 2150 (uvicorn)
+lab@s07:~/todo-note$ curl -s localhost/api/health; echo
+{"status":"ok","db":"ok"}
+lab@s07:~/todo-note$ curl -s localhost/api/todos | python3 -m json.tool --no-ensure-ascii | grep '"text"'
+        "text": "VM 직접 배포 확인",
+        "text": "재부팅 후에도 남는지 확인",

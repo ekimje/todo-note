@@ -1,0 +1,19 @@
+lab@s07:~/todo-note$ ls -l /var/www/todo-note
+total 32
+-rw-r--r-- 1 root root 9983 Nov  2 10:20 app.js
+-rw-r--r-- 1 root root  692 Nov  2 10:20 icon.svg
+-rw-r--r-- 1 root root 2741 Nov  2 10:20 index.html
+-rw-r--r-- 1 root root  270 Nov  2 10:20 manifest.webmanifest
+-rw-r--r-- 1 root root 7122 Nov  2 10:20 style.css
+lab@s07:~/todo-note$ ls -l /etc/nginx/sites-enabled/
+total 0
+lrwxrwxrwx 1 root root 36 Nov  2 10:20 todo-note -> /etc/nginx/sites-available/todo-note
+lab@s07:~/todo-note$ sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+lab@s07:~/todo-note$ curl -s -o /dev/null -w 'GET /  -> %{http_code} %{content_type} %{size_download}B\n' localhost/
+GET /  -> 200 text/html 2741B
+lab@s07:~/todo-note$ curl -s localhost/ | grep -o '<title>.*</title>'
+<title>할 일 노트</title>
+lab@s07:~/todo-note$ curl -s localhost/api/health; echo
+{"status":"ok","db":"ok"}

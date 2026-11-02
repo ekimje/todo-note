@@ -1,0 +1,20 @@
+lab@s07:~/todo-note$ kubectl apply -f k8s/
+namespace/todo-note unchanged
+configmap/todo-config unchanged
+persistentvolumeclaim/db-data created
+deployment.apps/db created
+service/db created
+deployment.apps/api created
+service/api created
+deployment.apps/web created
+service/web created
+ingress.networking.k8s.io/todo-note created
+lab@s07:~/todo-note$ kubectl -n todo-note rollout status deploy/db --timeout=180s
+Waiting for deployment "db" rollout to finish: 0 of 1 updated replicas are available...
+deployment "db" successfully rolled out
+lab@s07:~/todo-note$ kubectl -n todo-note rollout status deploy/api --timeout=120s
+Waiting for deployment "api" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "api" rollout to finish: 1 of 2 updated replicas are available...
+deployment "api" successfully rolled out
+lab@s07:~/todo-note$ kubectl -n todo-note rollout status deploy/web --timeout=120s
+deployment "web" successfully rolled out

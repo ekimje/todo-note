@@ -1,0 +1,14 @@
+lab@s07:~/todo-note$ git remote -v
+origin	https://github.com/ekimje/todo-note.git (fetch)
+origin	https://github.com/ekimje/todo-note.git (push)
+lab@s07:~/todo-note$ git log --oneline -3
+e2dc733 위젯: 일일 보기와 라이트/다크 테마 추가
+2349bc3 바탕화면 달력 위젯을 API에 연결하고 기간 일정 지원
+1dcf675 할 일 노트 3티어 앱 추가 (web / api / db)
+lab@s07:~/todo-note$ ls
+README.md
+api
+docker-compose.yml
+docs
+web
+widget

@@ -1,0 +1,11 @@
+lab@s07:~/todo-note$ uptime -s; cat /proc/sys/kernel/random/boot_id
+2026-10-08 18:58:36
+b0f0f9c0-0b59-452e-9ada-03668771b656
+lab@s07:~/todo-note$ systemctl is-enabled postgresql todo-api nginx
+enabled
+enabled
+enabled
+lab@s07:~/todo-note$ docker inspect -f '{{.Name}} restart={{.HostConfig.RestartPolicy.Name}}' lab-control-plane lab-worker lab-worker2
+/lab-control-plane restart=no
+/lab-worker restart=no
+/lab-worker2 restart=no

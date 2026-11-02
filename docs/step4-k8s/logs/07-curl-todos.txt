@@ -1,0 +1,20 @@
+lab@s07:~/todo-note$ curl -s -o /dev/null -w 'GET /  -> %{http_code} %{size_download}B\n' localhost/
+GET /  -> 200 2741B
+lab@s07:~/todo-note$ curl -s localhost/api/health; echo
+{"status":"ok","db":"ok"}
+lab@s07:~/todo-note$ curl -s localhost/api/todos; echo
+[]
+lab@s07:~/todo-note$ curl -s -X POST localhost/api/todos -H 'content-type: application/json' -d '{"text":"쿠버네티스 배포 확인","priority":"high","due":"2026-11-06"}' | python3 -m json.tool --no-ensure-ascii | head -5
+{
+    "id": "be63c54e-5ec5-4870-99ab-993e29a90cfa",
+    "text": "쿠버네티스 배포 확인",
+    "done": false,
+    "priority": "high",
+lab@s07:~/todo-note$ curl -s localhost/api/todos | python3 -m json.tool --no-ensure-ascii | grep '"text"'
+        "text": "쿠버네티스 배포 확인",
+lab@s07:~/todo-note$ kubectl -n todo-note exec deploy/db -- psql -U todo -d todo -c 'select text, priority, due from todos;'
+         text         | priority |    due     
+----------------------+----------+------------
+ 쿠버네티스 배포 확인 | high     | 2026-11-06
+(1 row)
+

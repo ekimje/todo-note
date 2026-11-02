@@ -1,0 +1,13 @@
+lab@s07:~/todo-note$ dpkg -l postgresql nginx python3-venv | tail -3
+ii  nginx          1.24.0-2ubuntu7.19 amd64        small, powerful, scalable web/proxy server
+ii  postgresql     16+257build1.1     all          object-relational SQL database (supported version)
+ii  python3-venv   3.12.3-0ubuntu2.1  amd64        venv module for python3 (default python3 version)
+lab@s07:~/todo-note$ psql --version; nginx -v; python3 --version
+psql (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
+nginx version: nginx/1.24.0 (Ubuntu)
+Python 3.12.3
+lab@s07:~/todo-note$ systemctl is-active postgresql nginx; systemctl is-enabled postgresql nginx
+active
+active
+enabled
+enabled

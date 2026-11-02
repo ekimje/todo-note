@@ -1,0 +1,17 @@
+lab@s07:~/todo-note$ sudo systemctl disable --now todo-api nginx postgresql
+Synchronizing state of nginx.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+Executing: /usr/lib/systemd/systemd-sysv-install disable nginx
+Synchronizing state of postgresql.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+Executing: /usr/lib/systemd/systemd-sysv-install disable postgresql
+Removed "/etc/systemd/system/multi-user.target.wants/nginx.service".
+Removed "/etc/systemd/system/multi-user.target.wants/todo-api.service".
+Removed "/etc/systemd/system/multi-user.target.wants/postgresql.service".
+lab@s07:~/todo-note$ systemctl is-active todo-api nginx postgresql; systemctl is-enabled todo-api nginx postgresql
+inactive
+inactive
+inactive
+disabled
+disabled
+disabled
+lab@s07:~/todo-note$ sudo ss -lntp | grep -E ':(80|5432|8000|8080) ' || echo '80 / 5432 / 8000 / 8080 모두 비어 있음'
+80 / 5432 / 8000 / 8080 모두 비어 있음

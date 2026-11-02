@@ -1,0 +1,23 @@
+lab@s07:~/todo-note$ kubectl -n todo-note get deploy,pod,svc,pvc,ingress -o wide | cut -c1-150
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES               SELECTOR
+deployment.apps/api   2/2     2            2           43s   api          todo-note-api:1.0    app=api
+deployment.apps/db    1/1     1            1           43s   postgres     postgres:16-alpine   app=db
+deployment.apps/web   2/2     2            2           43s   web          todo-note-web:1.0    app=web
+
+NAME                       READY   STATUS    RESTARTS      AGE   IP            NODE          NOMINATED NODE   READINESS GATES
+pod/api-58c577699b-8vzz4   1/1     Running   1 (10s ago)   43s   10.244.1.20   lab-worker    <none>           <none>
+pod/api-58c577699b-z2x2v   1/1     Running   0             43s   10.244.2.20   lab-worker2   <none>           <none>
+pod/db-7c668d7597-jx8zw    1/1     Running   0             43s   10.244.2.23   lab-worker2   <none>           <none>
+pod/web-5fd7567bdf-r7ml8   1/1     Running   0             42s   10.244.2.22   lab-worker2   <none>           <none>
+pod/web-5fd7567bdf-s96nw   1/1     Running   0             43s   10.244.1.21   lab-worker    <none>           <none>
+
+NAME          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+service/api   ClusterIP   10.96.150.151   <none>        8000/TCP   43s   app=api
+service/db    ClusterIP   10.96.162.243   <none>        5432/TCP   43s   app=db
+service/web   ClusterIP   10.96.30.174    <none>        80/TCP     43s   app=web
+
+NAME                            STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   A
+persistentvolumeclaim/db-data   Bound    pvc-a817af8c-3ae3-436c-b7ff-cf087d8e2b33   1Gi        RWO            standard       <unset>                 4
+
+NAME                                  CLASS     HOSTS   ADDRESS   PORTS   AGE
+ingress.networking.k8s.io/todo-note   traefik   *                 80      42s

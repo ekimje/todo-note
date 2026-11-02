@@ -1,0 +1,7 @@
+# 할 일 노트 — Kubernetes 배포 (4단계)
+#   적용 순서: Secret 만들기(명령, README 참고) → kubectl apply -f k8s/
+#   이 폴더의 리소스는 모두 todo-note 네임스페이스에 만든다
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: todo-note

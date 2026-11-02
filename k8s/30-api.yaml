@@ -1,0 +1,36 @@
+# 애플리케이션 티어 — 3단계 이미지 todo-note-api:1.0 (kind load 로 넣음)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: todo-note
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: api}
+  template:
+    metadata:
+      labels: {app: api}
+    spec:
+      containers:
+      - name: api
+        image: todo-note-api:1.0
+        imagePullPolicy: IfNotPresent    # 레지스트리에서 받지 않고 노드에 넣은 이미지를 쓴다
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef: {name: todo-config}
+        - secretRef: {name: todo-db}
+        readinessProbe:
+          httpGet: {path: /health, port: 8000}
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api                # web 이미지의 nginx.conf 가 http://api:8000 을 찾으므로 이름은 api
+  namespace: todo-note
+spec:
+  selector: {app: api}
+  ports:
+  - port: 8000

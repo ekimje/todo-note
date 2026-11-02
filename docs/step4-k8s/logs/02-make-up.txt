@@ -1,0 +1,23 @@
+lab@s07:~/ktcloud-cloud-native-lab/lab$ docker ps --filter name=lab- --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+NAMES               STATUS          PORTS
+lab-worker2         Up 33 seconds   
+lab-control-plane   Up 33 seconds   0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 127.0.0.1:36013->6443/tcp, 0.0.0.0:8080->30080/tcp
+lab-worker          Up 33 seconds   
+lab@s07:~/ktcloud-cloud-native-lab/lab$ make up
+클러스터 'lab' 이미 있음 (make reset 으로 재생성)
+준비 완료. 확인: make status
+lab@s07:~/ktcloud-cloud-native-lab/lab$ kubectl get nodes
+NAME                STATUS   ROLES           AGE   VERSION
+lab-control-plane   Ready    control-plane   12d   v1.37.0
+lab-worker          Ready    <none>          12d   v1.37.0
+lab-worker2         Ready    <none>          12d   v1.37.0
+lab@s07:~/ktcloud-cloud-native-lab/lab$ kubectl get ingressclass
+NAME                CONTROLLER                      PARAMETERS   AGE
+traefik (default)   traefik.io/ingress-controller   <none>       12d
+lab@s07:~/ktcloud-cloud-native-lab/lab$ kubectl -n traefik get pods,svc
+NAME                           READY   STATUS    RESTARTS      AGE
+pod/traefik-694bbc456d-jshqs   1/1     Running   1 (39s ago)   12d
+
+NAME                      TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+service/traefik           ClusterIP   10.96.195.76   <none>        80/TCP,443/TCP   12d
+service/traefik-metrics   ClusterIP   10.96.183.57   <none>        9100/TCP         12d

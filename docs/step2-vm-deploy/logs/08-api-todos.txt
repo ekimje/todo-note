@@ -1,0 +1,22 @@
+lab@s07:~/todo-note$ curl -s localhost/api/todos; echo
+[]
+lab@s07:~/todo-note$ curl -s -X POST localhost/api/todos -H 'content-type: application/json' -d '{"text":"VM 직접 배포 확인","priority":"high","due":"2026-11-03"}'; echo
+{"id":"d4fe9fb1-65b9-42f5-a2d3-9a939aa20613","text":"VM 직접 배포 확인","done":false,"priority":"high","start":null,"due":"2026-11-03","color":null,"created_at":"2026-11-02T10:20:36.726565+09:00","updated_at":"2026-11-02T10:20:36.726565+09:00"}
+lab@s07:~/todo-note$ curl -s -X POST localhost/api/todos -H 'content-type: application/json' -d '{"text":"재부팅 후에도 남는지 확인","start":"2026-11-02","due":"2026-11-04","color":2}'; echo
+{"id":"999ab5cf-3ac4-4f89-a3fc-449c9128d867","text":"재부팅 후에도 남는지 확인","done":false,"priority":"mid","start":"2026-11-02","due":"2026-11-04","color":2,"created_at":"2026-11-02T10:20:36.746082+09:00","updated_at":"2026-11-02T10:20:36.746082+09:00"}
+lab@s07:~/todo-note$ curl -s localhost/api/todos | python3 -m json.tool --no-ensure-ascii | grep -E '"(text|priority|start|due)"'
+        "text": "VM 직접 배포 확인",
+        "priority": "high",
+        "start": null,
+        "due": "2026-11-03",
+        "text": "재부팅 후에도 남는지 확인",
+        "priority": "mid",
+        "start": "2026-11-02",
+        "due": "2026-11-04",
+lab@s07:~/todo-note$ sudo -u postgres psql -d todo -c 'select text, priority, start, due from todos order by created_at;'
+           text            | priority |   start    |    due     
+---------------------------+----------+------------+------------
+ VM 직접 배포 확인         | high     |            | 2026-11-03
+ 재부팅 후에도 남는지 확인 | mid      | 2026-11-02 | 2026-11-04
+(2 rows)
+

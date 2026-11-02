@@ -1,0 +1,8 @@
+lab@s07:~/todo-note$ kubectl -n todo-note delete pod -l app=db
+pod "db-7c668d7597-jx8zw" deleted from todo-note namespace
+lab@s07:~/todo-note$ kubectl -n todo-note rollout status deploy/db --timeout=120s; kubectl -n todo-note get pod -l app=db
+deployment "db" successfully rolled out
+NAME                  READY   STATUS    RESTARTS   AGE
+db-7c668d7597-l9sjs   1/1     Running   0          1s
+lab@s07:~/todo-note$ sleep 5; curl -s localhost/api/todos | python3 -m json.tool --no-ensure-ascii | grep '"text"'
+        "text": "쿠버네티스 배포 확인",
