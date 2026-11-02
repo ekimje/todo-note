@@ -63,6 +63,8 @@ form.add {
   font: inherit; font-size: 14px; color: var(--fg); background: var(--bg);
   border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; min-height: 38px;
 }
+.date-field { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.meta .color-dot { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
 button { font: inherit; cursor: pointer; }
 .btn-primary {
   background: var(--accent); color: var(--surface); border: 0; border-radius: 8px;
@@ -110,6 +112,7 @@ li.item:first-child { border-top: 0; }
   body { padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
   h1 { font-size: 28px; }
   .add .opts { width: 100%; }
+  .date-field { flex: 1 1 140px; min-width: 0; }
   .add input[type="date"] { flex: 1 1 auto; min-width: 0; }
   .side { align-items: flex-start; }
 }

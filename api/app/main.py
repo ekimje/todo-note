@@ -8,6 +8,7 @@ from typing import Literal, Optional
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Response
+from psycopg import errors as pg_errors
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field, field_validator
@@ -26,9 +27,21 @@ CREATE TABLE IF NOT EXISTS todos (
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
+
+-- v2: 기간 일정(start ~ due)과 달력 위젯 형광펜 색
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS start DATE;
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS color SMALLINT;
+DO $$ BEGIN
+    ALTER TABLE todos ADD CONSTRAINT todos_color_range CHECK (color IS NULL OR color BETWEEN 0 AND 4);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+    -- 시작일은 마감일이 있을 때만, 마감일보다 늦을 수 없음
+    ALTER TABLE todos ADD CONSTRAINT todos_start_before_due CHECK (start IS NULL OR (due IS NOT NULL AND start <= due));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
-COLUMNS = "id, text, done, priority, due, created_at, updated_at"
+COLUMNS = "id, text, done, priority, start, due, color, created_at, updated_at"
+RANGE_ERROR = "시작일은 마감일보다 늦을 수 없고, 시작일을 쓰려면 마감일이 필요해요"
 
 pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=10, open=False, kwargs={"row_factory": dict_row})
 
@@ -58,7 +71,9 @@ def _clean_text(v: Optional[str]) -> Optional[str]:
 class TodoCreate(BaseModel):
     text: str = Field(max_length=200)
     priority: Priority = "mid"
-    due: Optional[date] = None
+    start: Optional[date] = None   # 기간 일정의 시작일 (없으면 하루 일정)
+    due: Optional[date] = None     # 마감일 = 기간 일정의 종료일
+    color: Optional[int] = Field(default=None, ge=0, le=4)  # 달력 형광펜 색 번호 0~4
 
     _v_text = field_validator("text")(_clean_text)
 
@@ -67,7 +82,9 @@ class TodoUpdate(BaseModel):
     text: Optional[str] = Field(default=None, max_length=200)
     done: Optional[bool] = None
     priority: Optional[Priority] = None
+    start: Optional[date] = None
     due: Optional[date] = None
+    color: Optional[int] = Field(default=None, ge=0, le=4)
 
     _v_text = field_validator("text")(_clean_text)
 
@@ -77,7 +94,9 @@ class Todo(BaseModel):
     text: str
     done: bool
     priority: Priority
+    start: Optional[date]
     due: Optional[date]
+    color: Optional[int]
     created_at: datetime
     updated_at: datetime
 
@@ -102,11 +121,16 @@ def list_todos():
 
 @app.post("/todos", response_model=Todo, status_code=201)
 def create_todo(body: TodoCreate):
-    with pool.connection() as conn:
-        return conn.execute(
-            f"INSERT INTO todos (text, priority, due) VALUES (%s, %s, %s) RETURNING {COLUMNS}",
-            (body.text, body.priority, body.due),
-        ).fetchone()
+    due = body.due or body.start  # 시작일만 주면 하루 일정
+    start = body.start if body.start and body.start != due else None
+    try:
+        with pool.connection() as conn:
+            return conn.execute(
+                f"INSERT INTO todos (text, priority, start, due, color) VALUES (%s, %s, %s, %s, %s) RETURNING {COLUMNS}",
+                (body.text, body.priority, start, due, body.color),
+            ).fetchone()
+    except pg_errors.CheckViolation:
+        raise HTTPException(422, RANGE_ERROR)
 
 
 @app.patch("/todos/{todo_id}", response_model=Todo)
@@ -120,11 +144,14 @@ def update_todo(todo_id: UUID, body: TodoUpdate):
     if not patch:
         raise HTTPException(400, "수정할 내용이 없어요")
     sets = ", ".join(f"{k} = %s" for k in patch)  # 키는 모델 필드로만 제한됨
-    with pool.connection() as conn:
-        row = conn.execute(
-            f"UPDATE todos SET {sets}, updated_at = now() WHERE id = %s RETURNING {COLUMNS}",
-            (*patch.values(), todo_id),
-        ).fetchone()
+    try:
+        with pool.connection() as conn:
+            row = conn.execute(
+                f"UPDATE todos SET {sets}, updated_at = now() WHERE id = %s RETURNING {COLUMNS}",
+                (*patch.values(), todo_id),
+            ).fetchone()
+    except pg_errors.CheckViolation:
+        raise HTTPException(422, RANGE_ERROR)
     if row is None:
         raise HTTPException(404, "할 일을 찾을 수 없어요")
     return row

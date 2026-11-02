@@ -1,6 +1,7 @@
 # 할 일 노트 (3티어)
 
-PC와 휴대폰에서 같이 쓰는 할 일 노트. Docker Compose 하나로 세 티어를 띄운다.
+PC와 휴대폰에서 같이 쓰는 할 일 노트. Docker Compose 하나로 세 티어를 띄우고,
+바탕화면 반투명 달력 위젯(`widget/`)도 같은 API를 써서 웹·휴대폰·바탕화면이 같은 데이터를 본다.
 
 ```
 [브라우저 / 휴대폰]
@@ -40,10 +41,40 @@ API 문서(Swagger): http://localhost:8080/api/docs
 |---|---|---|
 | GET | `/api/health` | API·DB 상태 |
 | GET | `/api/todos` | 목록 |
-| POST | `/api/todos` | 추가 `{text, priority?: high\|mid\|low, due?: "YYYY-MM-DD"}` |
-| PATCH | `/api/todos/{id}` | 수정 (보낸 필드만) `{text?, done?, priority?, due?}` |
+| POST | `/api/todos` | 추가 `{text, priority?: high\|mid\|low, start?, due?, color?: 0~4}` |
+| PATCH | `/api/todos/{id}` | 수정 (보낸 필드만) `{text?, done?, priority?, start?, due?, color?}` |
 | DELETE | `/api/todos/{id}` | 삭제 |
 | DELETE | `/api/todos` | 완료 항목 일괄 삭제 |
+
+- 날짜는 `YYYY-MM-DD`. `start ~ due` 가 기간 일정이고, `start` 없이 `due` 만 있으면 하루 일정
+- `start` 는 `due` 가 있을 때만, `due` 보다 늦을 수 없음 (어기면 422)
+- `color` 는 달력 위젯의 형광펜 색 번호. 없으면 위젯이 우선순위로 색을 고름
+
+## 바탕화면 달력 위젯 (Windows)
+
+`widget/widget.ps1` — Windows PowerShell 5.1 + WPF, 바탕화면 쪽에 붙는 반투명 달력.
+
+```bat
+widget\start-widget.cmd
+```
+
+- API에서 30초마다 다시 읽어 웹·휴대폰에서 바꾼 내용을 반영 (우클릭 → **지금 동기화**)
+- 서버에 닿지 않으면 마지막으로 받은 목록(`todos-cache.json`)을 보여주고 제목에 **오프라인** 표시. 이때는 저장 불가
+- 마감일 없는 할 일은 놓을 날짜가 없어 달력에 표시하지 않음
+- API 주소 변경: `widget/settings.json` 의 `"api"` 또는 환경변수 `TODO_API_URL`
+- 로그인 시 자동 실행: `Win+R` → `shell:startup` 폴더에 `start-widget.cmd` 바로가기 추가
+- ⚠ `.ps1` 파일은 **UTF-8 BOM** 으로 저장해야 함. BOM이 없으면 PowerShell 5.1이 CP949로 읽어 한글 주석 뒤의 코드 줄이 사라질 수 있음
+
+## 테스트
+
+스택을 띄운 상태에서:
+
+```bash
+python -m pytest api/tests -v                                                   # API 통합 테스트
+powershell -NoProfile -ExecutionPolicy Bypass -File widget/tests/sync-test.ps1   # 위젯 ↔ API 동기화 테스트
+```
+
+둘 다 테스트가 만든 항목만 지운다. 다른 서버를 검사하려면 `TODO_API_URL=http://<host>:8080/api`.
 
 ## 자주 쓰는 명령
 

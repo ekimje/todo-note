@@ -5,6 +5,7 @@
   const PRI_LABEL = { high: "높음", mid: "보통", low: "낮음" };
   const PRI_RANK = { high: 0, mid: 1, low: 2 };
   const POLL_MS = 15000;
+  const COLORS = ["#E0B800", "#3FA34D", "#E0508E", "#3D8BE0", "#E07B1F"]; // 바탕화면 달력 위젯과 같은 색
 
   let todos = [];
   let filter = "all";
@@ -148,8 +149,13 @@
       const late = !t.done && t.due < todayStr;
       const due = document.createElement("span");
       due.className = "due" + (late ? " late" : "");
-      due.textContent = "마감 " + fmtDue(t.due) + (late ? " · 지남" : "");
+      due.textContent = (t.start ? "기간 " + fmtDue(t.start) + " ~ " + fmtDue(t.due) : "마감 " + fmtDue(t.due)) + (late ? " · 지남" : "");
       meta.appendChild(due);
+    }
+    if (t.color != null && COLORS[t.color]) {
+      const dot = document.createElement("span");
+      dot.className = "color-dot"; dot.style.background = COLORS[t.color]; dot.title = "달력 색";
+      meta.appendChild(dot);
     }
     body.appendChild(meta);
 
@@ -183,8 +189,12 @@
     e.preventDefault();
     const text = $("newText").value.trim();
     if (!text) return;
-    const item = { text, priority: $("newPri").value, due: $("newDue").value || null };
-    $("newText").value = ""; $("newDue").value = ""; $("newPri").value = "mid";
+    let start = $("newStart").value || null, due = $("newDue").value || null;
+    if (start && !due) due = start;                       // 시작일만 → 하루 일정
+    if (start && due && start > due) [start, due] = [due, start];
+    if (start === due) start = null;
+    const item = { text, priority: $("newPri").value, start, due };
+    $("newText").value = ""; $("newStart").value = ""; $("newDue").value = ""; $("newPri").value = "mid";
     if (filter === "done") filter = "all";
     const tempId = "tmp-" + Date.now();
     todos.push(Object.assign({ id: tempId, done: false, created_at: new Date().toISOString() }, item));
