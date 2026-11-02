@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 
 $src = Join-Path $PSScriptRoot '..\widget.ps1'
 $ast = [Management.Automation.Language.Parser]::ParseFile((Resolve-Path $src), [ref]$null, [ref]$null)
-$names = 'ToDate', 'ToStr', 'Invoke-Api', 'Convert-Todo', 'Load-Data', 'Save-Item'
+$names = 'ToDate', 'ToStr', 'Invoke-Api', 'Convert-Todo', 'Load-Data', 'Save-Item', 'Set-Done'
 foreach ($f in $ast.FindAll({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] }, $true)) {
     if ($names -contains $f.Name) { . ([scriptblock]::Create($f.Extent.Text)) }
 }
@@ -59,13 +59,22 @@ try {
     Check 'priority color fallback' ((Find $web.id).color -eq 2)
     Check 'no-due todo hidden from calendar' ($null -eq (Find $nodue.id))
 
-    # 5. 삭제
+    # 5. 일일 보기 체크 상자: 완료 표시만 바꾸고 나머지는 그대로
+    Check 'set-done false' (-not (Set-Done $it.id $false))
+    Load-Data; $it3 = Find $it.id
+    Check 'done cleared' ($it3.done -eq $false -and $it3.text -eq $ko2 -and $it3.color -eq 4)
+    Check 'set-done true' (-not (Set-Done $it.id $true))
+    Load-Data
+    Check 'done set' ((Find $it.id).done -eq $true)
+    Check 'set-done unknown id returns message' ([bool](Set-Done ([guid]::NewGuid()) $true))
+
+    # 6. 삭제
     [void](Invoke-Api 'DELETE' "/todos/$($it.id)" $null)
     Load-Data
     Check 'deleted' ($null -eq (Find $it.id))
     $created = $created | Where-Object { $_ -ne $it.id }
 
-    # 6. 서버가 꺼졌을 때: 캐시로 표시 + 오프라인 표시
+    # 7. 서버가 꺼졌을 때: 캐시로 표시 + 오프라인 표시
     $before = $script:items.Count
     $script:apiBase = 'http://127.0.0.1:9/api'
     Load-Data
